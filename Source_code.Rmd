@@ -1,0 +1,1311 @@
+---
+title: "Birth and Death number variation"
+author: "Tomas Sladecek"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=14.6, fig.height=9, warning=FALSE, message=FALSE)
+```
+
+## Content
+  - *Yearly Births (Figure 1)*
+  - *Monthly Births (Figure 2)*
+  - *Monthly Births (Figure 3)*
+  - *Modelling variation (Figure 4 & 5, Supplementary figure 1)*
+  - *Map (Figure 6)*
+  - *Births and Deaths (Figure 7)*
+  - *Data Gathering (births and deaths data from different countries)*
+  
+```{r}
+library(tidyverse)
+library(gridExtra)
+theme_tomas <- function(base_size = 22, base_family = "sans"){
+  theme_light(base_size = base_size, base_family = base_family) %+replace%
+    theme(
+      plot.title = element_text(color = 'black', hjust = 0, size = 22, vjust = 0, margin = margin(0,0,0.4,0, 'cm')),
+      plot.subtitle = element_text(color = 'black',size = 22, hjust = 0),
+      #axis.title = element_text(color = 'black', size = 14),
+      #axis.text = element_text(color = rgb(105, 105, 105, maxColorValue = 255),size = 14),
+      
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.background = element_rect(color = 'white'),
+      panel.border = element_blank(), 
+      axis.line = element_line(colour = "black", size = 0.1),
+      # for facets
+      strip.text.x = element_text(size = 22, colour = "black", margin = margin(0.05,0.05,0.05,0.05,'cm')), 
+      strip.background =element_rect(fill="gray90", color = 'gray85', linetype = NULL),
+      complete = TRUE
+    )
+}
+```
+
+# Yearly Births (Figure 1)
+
+```{r}
+label.size = 8 # 6
+yearly_births <- read_csv('../bpy.csv', col_names = FALSE)
+yearly_births <- yearly_births %>% 
+  rename(Year = X1, Births = X2)
+
+ggplot() +
+  geom_smooth(data = yearly_births, aes(Year, Births), se = F, alpha = 0.3, color = 'gray55', linetype = 3, method = 'lm') +
+  geom_line(data = filter(yearly_births, Year <= 1914), aes(Year, Births, group = 1), color = 'gray', size = 1.5) + 
+  geom_line(data = filter(yearly_births, Year %in% 1918:1929), aes(Year, Births, group = 1), color = 'gray', size = 1.5) + 
+  #geom_line(data = filter(yearly_births, Year %in% 1933:1939), aes(Year, Births, group = 1), color = 'gray', size = 1.5) + 
+  geom_line(data = filter(yearly_births, Year >= 1945), aes(Year, Births, group = 1), color = 'gray', size = 1.5) + 
+  
+
+  # WW1
+  geom_label(aes(x = 1914, y = 68500, label = 'WW1'), col = 'red', size = label.size) +
+  geom_line(data = filter(yearly_births, Year %in% 1914:1918), aes(Year, Births, group = 1), color = 'red', size = 1.5) + 
+  # WW2
+  geom_label(aes(x = 1938, y = 82000, label = 'WW2'), col = 'darkred', size = label.size) +
+  geom_line(data = filter(yearly_births, Year %in% 1939:1945), aes(Year, Births, group = 1), color = 'darkred', size = 1.5) +
+  
+  # Great Depression ~1929- ~1933
+  geom_label(aes(x = 1933, y = 59000, label = '1929-1939\nGreat\nDepression'), col = 'darkorchid', size = label.size) +
+  geom_line(data = filter(yearly_births, Year %in% 1929:1939), aes(Year, Births, group = 1), color = 'darkorchid', size = 1.5) +
+  
+  # EFTA
+  geom_point(aes(x = 1960.5, y = yearly_births$Births[yearly_births$Year == 1960]), size = 3, color = 'navy') +
+  geom_segment(aes(x = 1960.5, xend = 1955, y = yearly_births$Births[yearly_births$Year == 1960], yend = 71600), arrow = arrow(length = unit(0.1, "inches")), col = 'navy')+
+  geom_label(aes(x = 1955, y = 70000, label = '1960-EFTA'), col = 'navy', size = label.size) +
+  
+  # EEC/oil crisis
+  geom_point(aes(x = 1973.5, y = yearly_births$Births[yearly_births$Year == 1973]), size = 3, color = 'darkgreen') +
+  geom_segment(aes(x = 1973.5, xend = 1980, y = yearly_births$Births[yearly_births$Year == 1973], yend = 83400), arrow = arrow(length = unit(0.1, "inches")), col = 'darkgreen')+
+  geom_label(aes(x = 1980, y = 86500, label = '1973-EEC/\n1st. Oil Crisis'), col = 'darkgreen', size = label.size) +
+  
+   # 2nd oil crisis
+  geom_point(aes(x = 1979, y = yearly_births$Births[yearly_births$Year == 1979]), size = 3, color = 'forestgreen') +
+  geom_segment(aes(x = 1979, xend = 1974, y = yearly_births$Births[yearly_births$Year == 1979], yend = 57000), arrow = arrow(length = unit(0.1, "inches")), col = 'forestgreen')+
+  geom_label(aes(x = 1963, y = 56500, label = '1979\n2nd Oil Crisis'), col = 'forestgreen', size = label.size) +
+  
+  # 2013 affected by 1983
+  geom_curve(aes(x = 1983 + 1, xend = 2013, y = yearly_births$Births[yearly_births$Year == 1983],  yend = yearly_births$Births[yearly_births$Year == 2013]), 
+             curvature = 0.2, arrow = arrow(length = unit(0.15, 'inches')), size = 0.3, linetype = 4, color = 'grey10') + 
+  
+  # 1972 affected by 1946
+  geom_curve(aes(x = 1946 + 1, xend = 1971.5, y = yearly_births$Births[yearly_births$Year == 1946],  yend = yearly_births$Births[yearly_births$Year == 1972]), 
+             curvature = -0.2, arrow = arrow(length = unit(0.15, 'inches')), size = 0.3, linetype = 4, color = 'grey10') + 
+  
+  # Hitler
+  #geom_point(aes(x = 1933, y = yearly_births$Births[yearly_births$Year == 1933]), size = 3, color = 'brown') +
+  #geom_segment(aes(x = 1933, xend = 1940, y = yearly_births$Births[yearly_births$Year == 1933], yend = 61000), arrow = arrow(length = unit(0.1, "inches")), col = 'brown')+
+  #geom_label(aes(x = 1942, y = 59000, label = '1933-Hitler'), col = 'brown') +
+  
+  geom_point(aes(x = 1922, y = yearly_births$Births[yearly_births$Year == 1922]), size = 3, color = 'darkmagenta') +
+  geom_segment(aes(x = 1922, xend = 1917, y = yearly_births$Births[yearly_births$Year == 1922], yend = 83000), arrow = arrow(length = unit(0.1, "inches")), col = 'darkmagenta')+
+  geom_label(aes(x = 1917, y = 86000, label = '1922- Det \nstore bankkrak'), col = 'darkmagenta', size = label.size) +
+  
+  geom_point(aes(x = 2007.5, y = yearly_births$Births[yearly_births$Year == 2007]), size = 3, color = 'blueviolet') +
+  geom_segment(aes(x = 2007.5, xend = 2005, y = yearly_births$Births[yearly_births$Year == 2007], yend = 74000), arrow = arrow(length = unit(0.1, "inches")), col = 'blueviolet')+
+  geom_label(aes(x = 2005, y = 77000, label = '2007-2008\n Global Financial Crisis'), col = 'blueviolet', size = label.size) +
+  
+  theme_tomas()
+
+ggsave('final_pics/yearly_births.png', width = 14.6, height = 9)
+```
+
+# Monthly Births (Figure 2)
+
+```{r}
+countries <- read_rds('countries_raw.rds')
+
+months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December')
+
+countries <- broom::tidy(apply(countries, 1:2, function(x) ifelse(x == 'february', 'February', x)))
+
+countries <- countries %>% 
+  mutate(numMonth = match(Month, months))
+
+countries$Month <- factor(countries$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+countries$Year <- as.numeric(as.character(countries$Year))
+countries$Births <- as.numeric(as.character(countries$Births))
+```
+
+```{r}
+library(scales)
+countries <- countries %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>%
+  mutate(births_per_monthday = Births/month_days)
+
+countries %>% 
+  ungroup() %>% 
+  arrange(country_name, Year, numMonth) %>% 
+  group_by(country_name) %>% 
+  mutate(n = 1:n()) %>% 
+  ungroup() %>% 
+  mutate(ycol = ifelse(Year %% 2 == 0, '0', '1')) %>% 
+  
+  ggplot(aes(n, births_per_monthday, group = 1, col = ycol)) + 
+    geom_line() +
+    facet_wrap(~country_name, ncol = 2, scales = 'free_y') +
+    scale_x_continuous(label = 2007:2017, breaks = seq(from = 6.5, length.out = 11, by = 12)) + 
+    scale_y_continuous(breaks = pretty_breaks(n = 2)) +
+    scale_color_manual(values = c('0' = 'darkred', '1' = 'darkorange')) +
+    
+    labs(y = 'Births per month day', x = NULL) +
+  
+    theme_tomas() + 
+    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+
+#ggsave('final_pics/monthly_births.png', width = 14.6, height = 9)
+```
+
+# Monthly births - comparison of 4 groups (Figure 3)
+
+```{r eval = F}
+summ_filter <- function(df, min_year, max_year){
+  df %>% 
+    filter(Year >= min_year & Year <= max_year) %>% 
+    group_by(Month) %>% 
+    summarise(sum_births = sum(Births), sum_days = sum(month_days), births_per_day = sum_births / sum_days)
+}
+```
+
+```{r eval = F}
+library(raster) # this library has inside it the `cv` function. It calculates coefficient of variation = 100% * sd(x) / mean(x)
+
+normalized_births <- tibble(Month = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'),
+                     # `sum_filter` ensures that only years in a certain range are selected
+       Denmark = scale(summ_filter(denmark, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(denmark, 2007, 2017)$births_per_day), 
+       Norway = scale(summ_filter(norway, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(norway, 2007, 2017)$births_per_day),
+       Sweden = scale(summ_filter(sweden, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(sweden, 2007, 2017)$births_per_day),
+       Australia = scale(summ_filter(au, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(au, 2007, 2017)$births_per_day), 
+       Estonia = scale(summ_filter(estonia, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(estonia, 2007, 2017)$births_per_day),
+       Finland = scale(summ_filter(finland, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(finland, 2007, 2017)$births_per_day),
+       Iceland = scale(summ_filter(iceland, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(iceland, 2007, 2017)$births_per_day),
+       Latvia = scale(summ_filter(latvia, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(latvia, 2007, 2017)$births_per_day), 
+       France = scale(summ_filter(france, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(france, 2007, 2017)$births_per_day),
+       Germany = scale(summ_filter(germany, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(germany, 2007, 2017)$births_per_day),
+       Ireland = scale(summ_filter(ireland, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(ireland, 2007, 2017)$births_per_day),
+       Slovenia = scale(summ_filter(slovenia, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(slovenia, 2007, 2017)$births_per_day),
+       Croatia = scale(summ_filter(croatia, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(croatia, 2007, 2017)$births_per_day),
+       Japan = scale(summ_filter(japan, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(japan, 2007, 2017)$births_per_day),
+       South_Korea = scale(summ_filter(korea, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(korea, 2007, 2017)$births_per_day),
+       Lithuania = scale(summ_filter(lithuania, 2007, 2017)$births_per_day)[1:12] * cv(summ_filter(lithuania, 2007, 2017)$births_per_day)
+       ) 
+
+normalized_births$Month <- factor(normalized_births$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+normalized_births <- normalized_births %>%
+  gather('Denmark':'Lithuania', key = 'Country', value = 'Normalized_Births') %>% 
+  mutate(hemisphere = ifelse(Country %in% c('Australia'), 'South', 'North'))
+detach_package(raster)
+```
+
+```{r}
+normalized_births <- read_rds('normalized_births.rds')
+```
+
+```{r}
+nordic <- normalized_births %>% 
+  mutate(col = ifelse(Country %in% c('Denmark', 'Norway', 'Sweden', 'Iceland', 'Finland'), Country, 'other')) %>% 
+  
+  ggplot(aes(Month, Normalized_Births, group = Country, color = col, size = col, alpha = col)) + 
+  geom_line() + 
+
+  scale_x_discrete(labels = abbreviate) + 
+  scale_size_manual(values = c(Denmark = 2, Norway = 2, Sweden = 2, Finland = 2, Iceland = 2, other = 0.5), breaks = c('Denmark', 'Norway', 'Finland', 'Sweden', 'Finland', 'Iceland'), guide = 'none') +
+  scale_color_manual(values = c(Denmark = 'darkred', Norway = 'navy', Sweden = 'yellow3', Finland = 'darkgreen', Iceland = 'darkorange', other = 'gray10'), breaks = c('Denmark', 'Norway', 'Finland', 'Sweden', 'Finland', 'Iceland')) + 
+   
+   scale_alpha_manual(values = c(Denmark = 1, Norway = 1, Sweden = 1, Finland = 1, Iceland = 1, other = 0.2), breaks = c('Denmark', 'Norway', 'Finland', 'Sweden', 'Finland', 'Iceland'), guide = 'none') + 
+    
+  theme_tomas() + 
+  theme(legend.position = c(.5, .15), legend.background = element_rect(fill = 'transparent'), axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(color = guide_legend('', nrow = 1)) + 
+  labs(y = 'Normalized births * CV', title = 'Nordic Countries, from 2007-2017\n', x = NULL) +
+  theme(legend.text = element_text(size = 14))
+
+baltic <- normalized_births %>% 
+  mutate(col = ifelse(Country %in% c('Denmark', 'Latvia', 'Lithuania', 'Estonia', 'Ireland'), Country, 'other')) %>% 
+  
+  ggplot(aes(Month, Normalized_Births, group = Country, color = col, size = col, alpha = col)) + 
+  geom_line() + 
+
+  scale_x_discrete(labels = abbreviate) + 
+   scale_size_manual(values = c(Denmark = 2, Ireland = 2, Estonia = 2, Latvia = 2, Lithuania = 2, other = 0.5), breaks = c('Denmark', 'Latvia', 'Lithuania', 'Estonia', 'Ireland'), guide = 'none') +
+  scale_color_manual(values = c(Denmark = 'darkred', Ireland = 'darkgreen', Estonia = 'navy', Latvia = 'darkorange', Lithuania = 'yellow3', other = 'gray10'), breaks = c('Denmark', 'Latvia', 'Lithuania', 'Estonia', 'Ireland')) + 
+    scale_alpha_manual(values = c(Denmark = 1, Ireland = 1, Estonia = 1, Latvia = 1, Lithuania = 1, other = 0.2), breaks = c('Denmark', 'Latvia', 'Lithuania', 'Estonia', 'Ireland'), guide = 'none') +
+    
+  theme_tomas() + 
+  theme(legend.position = c(.5, .15), legend.background = element_rect(fill = 'transparent'), axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(color = guide_legend('', nrow = 1)) + 
+  labs(y = 'Normalized births * CV', title = 'Baltic countries + Ireland, from 2007-2017\n', x = NULL) +
+  theme(legend.text = element_text(size = 14))
+
+eu <- normalized_births %>% 
+  mutate(col = ifelse(Country %in% c('Denmark', 'Germany', 'France', 'Slovenia', 'Croatia'), Country, 'other')) %>% 
+  
+  ggplot(aes(Month, Normalized_Births, group = Country, color = col, size = col, alpha = col)) + 
+  geom_line() + 
+
+  scale_x_discrete(labels = abbreviate) + 
+  scale_size_manual(values = c(Denmark = 2, Slovenia = 2, Germany = 2, France = 2, Croatia = 2, other = 0.5), breaks = c('Denmark', 'Germany', 'France', 'Slovenia', 'Croatia'), guide = 'none') +
+  scale_color_manual(values = c(Denmark = 'darkred', Slovenia = 'green', Germany = 'darkorange', France = 'navy', Croatia = 'yellow3', other = 'gray10'), breaks = c('Denmark', 'Germany', 'France', 'Slovenia', 'Croatia')) + 
+    scale_alpha_manual(values = c(Denmark = 1, Slovenia = 1, Germany = 1, France = 1, Croatia = 1, other = 0.2), breaks = c('Denmark', 'Germany', 'France', 'Slovenia', 'Croatia'), guide = 'none') +
+    
+  theme_tomas() + 
+  theme(legend.position = c(.5, .15), legend.background = element_rect(fill = 'transparent'), axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(color = guide_legend('', nrow = 1)) + 
+  labs(y = 'Normalized births * CV', title = 'Other European countries, from 2007-2017\n', x = NULL) +
+  theme(legend.text = element_text(size = 14))
+
+world <- normalized_births %>% 
+  mutate(col = ifelse(Country %in% c('Denmark', 'Australia', 'Japan', 'South_Korea'), Country, 'other')) %>% 
+  
+  ggplot(aes(Month, Normalized_Births, group = Country, color = col, size = col, alpha = col)) + 
+  geom_line() + 
+
+  scale_x_discrete(labels = abbreviate) + 
+  scale_size_manual(values = c(Denmark = 2, Japan = 2, South_Korea = 2, Australia = 2, other = 0.5), breaks = c('Denmark', 'Australia', 'Japan', 'South_Korea'), guide = 'none') +
+  scale_color_manual(values = c(Denmark = 'darkred', Japan = 'darkgreen', South_Korea = 'navy', Australia = 'yellow3', other = 'gray10'), breaks = c('Denmark', 'Australia', 'Japan', 'South_Korea')) + 
+    scale_alpha_manual(values = c(Denmark = 1, Japan = 1, South_Korea = 1, Australia = 1, other = 0.2), breaks = c('Denmark', 'Australia', 'Japan', 'South_Korea'), guide = 'none') +
+    
+  theme_tomas() + 
+  theme(legend.position = c(.5, .15), legend.background = element_rect(fill = 'transparent'), axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(color = guide_legend('', nrow = 1)) + 
+  labs(y = 'Normalized births * CV', title = 'Around the World, from 2007-2017\n', x = NULL) +
+  theme(legend.text = element_text(size = 14))
+
+cg <- grid.arrange(nordic, baltic, eu, world)
+#ggsave(plot = cg, filename = 'final_pics/countries_groups.png', width = 14.6, height = 9)
+```
+
+# Modelling the variation (Figure 4 & 5)
+
+```{r}
+adjr2_countries <- tibble()
+countries_names <- unique(countries$country_name)
+
+for (i in 1:length(countries_names)) {
+  country <- countries_names[i]
+  sinmodel <- lm(births_per_monthday ~ sin(2*pi*numMonth/12) + cos(2*pi*numMonth/12), data = filter(countries, country_name == country))
+  a <- anova(
+    lm(births_per_monthday ~ 1, data = filter(countries, country_name == country)),
+    sinmodel
+  )
+  
+  xmax <- (6/pi) * atan(sinmodel$coefficients[[2]] / sinmodel$coefficients[[3]])
+  ymax <- sinmodel$coefficients[[1]] + sinmodel$coefficients[[2]] * sin(2*pi*xmax/12) + sinmodel$coefficients[[3]] * cos(2*pi*xmax/12)
+  
+  adjr2_countries <- rbind(adjr2_countries, tibble(Country = country, 
+                                                   adjr2 = summary(sinmodel)$adj.r.squared, 
+                                                   intercept = sinmodel$coefficients[[1]], 
+                                                   stretch = abs(ymax - sinmodel$coefficients[[1]]), 
+                                                   sin_vs_linear = a$`Pr(>F)`[2]))
+}
+```
+
+```{r echo = F}
+knitr::kable(
+  adjr2_countries
+)
+```
+
+Supplementary figure 1
+```{r}
+estr <- adjr2_countries %>% 
+  mutate(effstr = 100*stretch/intercept) %>% 
+  {.}
+estr %>% 
+  ggplot(aes(effstr, adjr2)) + 
+  geom_smooth(method = 'lm', fill = 'gray80') + 
+  geom_point() + 
+  theme_tomas() 
+```
+
+```{r}
+cor(estr$adjr2, estr$effstr)
+```
+
+
+```{r}
+ar2_plot <- adjr2_countries %>% 
+  mutate(logp = -log10(sin_vs_linear)) %>% 
+  arrange(desc(logp))
+
+ar2_plot$Country <- factor(ar2_plot$Country, levels = ar2_plot$Country)
+
+ar2_plot %>% 
+  ggplot(aes(Country, logp)) + 
+  geom_col(fill = 'royalblue') + 
+  geom_hline(yintercept = -log10(0.05/16), col = 'orange', linetype = 2, size = 2) + # orange 
+  theme_tomas() +
+  labs(y = expression(paste('-log'[10], ' pvalue')), x = NULL) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+ggsave('final_pics/sin_con_comp.png', height = 5, width = 14.6)  
+```
+
+```{r}
+# This function fits a constant and a sinusoidal curve through the data, and returns a plot
+model_comp <- function(country, ylims){
+  # sin Model
+  temp_model <- lm(births_per_monthday ~ sin(2*pi * (numMonth)/12) + cos(2*pi * (numMonth)/12), data = filter(countries, country_name == country))
+  # constant model predictions
+  temp_const_preds <- predict(lm(births_per_monthday ~ 1,  data = filter(countries, country_name == country)), newdata = tibble(numMonth = seq(1, 12, 0.01)), se = T)
+  # Predictions with se
+  temp_preds <- predict(temp_model, se = T, newdata = tibble(numMonth = seq(1, 12, 0.01)))
+  temp_mean <- unique(temp_const_preds$fit)
+  # table with all fitted values
+  temp_predictions <- tibble(numMonth = seq(1, 12, 0.01), pred = temp_preds$fit, p_plus_2se = pred + 2*temp_preds$se.fit, p_minus_2se = pred -  2*temp_preds$se.fit, cp_plus_2se = temp_mean + 2*temp_const_preds$se.fit, cp_minus_2se = temp_mean - 2*temp_const_preds$se.fit)
+
+  
+  countries %>% 
+    filter(country_name == country) %>% 
+    ggplot(aes(numMonth, births_per_monthday)) + 
+      geom_point(col = 'gray50') +
+  
+      # constant
+      geom_segment(aes(x = 1, xend = 12, y = temp_mean, yend = temp_mean), col = 'orange', size = 1) + 
+      geom_line(data = temp_predictions, aes(numMonth, cp_plus_2se), col = 'orange', size = 0.5, linetype = 2) +
+      geom_line(data = temp_predictions, aes(numMonth, cp_minus_2se), col = 'orange', size = 0.5, linetype = 2) +
+      
+      # polynomial
+      geom_line(data = temp_predictions, aes(numMonth, pred), col = 'navy', size = 1.5) +
+      geom_line(data = temp_predictions, aes(numMonth, p_plus_2se), col = 'navy', size = 0.5, linetype = 2) +
+      geom_line(data = temp_predictions, aes(numMonth, p_minus_2se), col = 'navy', size = 0.5, linetype = 2) +
+  
+      theme_tomas() + 
+    theme(axis.text.x = element_text(angle = 45,hjust = 1))+
+      scale_x_continuous(breaks = 1:12, labels = abbreviate(months)) + 
+      labs(title = country, x = NULL, y = 'Births per month day') +
+    lims(y = ylims)
+}
+```
+
+```{r}
+denmark_real <- model_comp('Denmark', c(140, 200))
+au_real <- model_comp('Australia', c(740, 880))
+```
+
+```{r}
+# This function generates fake country births based on a real one and fits constant and sinusoidal curve through it. It returns the plot of the data and fits 
+gen_births <- function(country, sin = T, seed = 1, ylims){
+  
+  ###################################
+  # generating random birth numbers #
+  ###################################
+  set.seed(seed)
+  sinmodel <- lm(births_per_monthday ~ sin(2*pi * (numMonth)/12) + cos(2*pi * (numMonth)/12), data = filter(countries, country_name == country))
+  sin_stretch <- sinmodel$coefficients[[2]]
+  cos_stretch <- sinmodel$coefficients[[3]]
+  intercept <- sinmodel$coefficients[[1]]
+  
+  # getting mean sd
+  sd_per_month <- countries %>% 
+    filter(country_name == country) %>% 
+    group_by(Month) %>% 
+    summarise(sd = sd(births_per_monthday))
+  
+  sd_c <- sd_per_month$sd
+
+  x = 1:12
+  temp_tibble <- tibble()
+  if(sin) {
+    # generate sinusoid births
+  y = intercept + sin_stretch * sin(2*pi*x/12) + cos_stretch * cos(2*pi*x/12)
+
+  for (i in 1:12) {
+    temp_tibble <- rbind(temp_tibble, tibble(Month = rep(i, 11), gen_births = rnorm(11, mean = y[i], sd = sd_c)))
+    } # for
+  } # if
+  
+  else{
+      # generate constant births
+     y = intercept
+     for (i in 1:12) {
+       temp_tibble <- rbind(temp_tibble, tibble(Month = rep(i, 11), gen_births = rnorm(11, mean = y, sd = sd_c)))
+     }
+     
+  } # else
+  
+  ############
+  ### Fits ###
+  ############
+  
+  # sinus
+  temp_sin_preds <- predict(lm(gen_births ~ sin(2*pi*(Month)/12) + cos(2*pi*(Month)/12), data = temp_tibble), se = T, newdata = tibble(Month = seq(1, 12, 0.01)))
+  
+  #constant
+  temp_const_preds <- predict(lm(gen_births ~ 1, data = temp_tibble), se = T, newdata = tibble(Month = seq(1, 12, 0.01)))
+  
+  # predictions table
+  predictions <- tibble(numMonth = seq(1, 12, 0.01), pred = temp_sin_preds$fit, p_plus_2se = pred + 2*temp_sin_preds$se.fit, p_minus_2se = pred -  2*temp_sin_preds$se.fit, cp_plus_2se = intercept + 2*temp_const_preds$se.fit, cp_minus_2se = intercept - 2*temp_const_preds$se.fit)
+  
+  ##########
+  ## Plot ##
+  ##########
+  
+  plot_title <- ifelse(sin, 'Sinusoid', 'Constant')
+  temp_tibble %>% 
+    ggplot(aes(Month, gen_births)) + 
+    geom_point(col = 'gray50') + 
+    
+    # constant
+      geom_segment(aes(x = 1, xend = 12, y = intercept, yend = intercept), col = 'orange', size = 1) + 
+      geom_line(data = predictions, aes(numMonth, cp_plus_2se), col = 'orange', size = 0.5, linetype = 2) +
+      geom_line(data = predictions, aes(numMonth, cp_minus_2se), col = 'orange', size = 0.5, linetype = 2) +
+      
+      # polynomial
+      geom_line(data = predictions, aes(numMonth, pred), col = 'navy', size = 1.5) +
+      geom_line(data = predictions, aes(numMonth, p_plus_2se), col = 'navy', size = 0.5, linetype = 2) +
+      geom_line(data = predictions, aes(numMonth, p_minus_2se), col = 'navy', size = 0.5, linetype = 2) +
+    theme_tomas() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+    lims(y = ylims) + 
+    labs(title = plot_title, y = 'Generated Birth Numbers', x = NULL) + 
+    scale_x_continuous(breaks = 1:12, labels = abbreviate(months)) 
+ 
+}
+```
+
+```{r}
+sin_gen <- gen_births('Denmark', ylims = c(140, 200), sin = T)
+const_gen <- gen_births('Denmark', ylims = c(140, 200), sin = F)
+```
+
+```{r}
+const_vs_sin <- grid.arrange(denmark_real, au_real, sin_gen, const_gen, ncol = 2)
+#ggsave(plot = const_vs_sin, filename = 'final_pics/const_vs_sin.png', width = 14.6, height = 9)
+```
+
+# Map (Figure 6)
+
+```{r results='hide'}
+library(viridis)
+library(stringr)
+```
+
+```{r results='hide'}
+map.world <- map_data('world')
+countries_raw <- adjr2_countries
+
+countries <- adjr2_countries %>% 
+  select(Country, adjr2)
+
+# Which countries have different names in my df and the `world.map` dataframe
+#unique(countries$Country)[!(unique(countries$Country) %in% unique(map.world$region))]
+
+# finding the name of south korea in map.world
+#unique(map.world$region)
+
+# so it is without underscore
+countries <- as.tibble(apply(countries, 1:2, function(x) ifelse(x == 'South_Korea', 'South Korea', x)))
+
+worldar2 <- right_join(countries, map.world, by = c('Country' = 'region'))
+worldar2$adjr2 <-  as.numeric(as.character(worldar2$adjr2))
+```
+
+```{r results='hide'}
+europe <- countries %>% 
+  filter(!(Country %in% c('Australia', 'South Korea', 'Japan')))
+
+countries_europe <- str_split('Albania Andorra Armenia Austria Azerbaijan Belarus Belgium BosniaandHerzegovina Bulgaria Croatia Cyprus Czechia Denmark Estonia Finland France Georgia Germany Greece Hungary Iceland Ireland Italy Kazakhstan Kosovo Latvia Liechtenstein Lithuania Luxembourg Malta Moldova Monaco Montenegro Netherlands NorthMacedonia Norway Poland Portugal Romania Russia SanMarino Serbia Slovakia Slovenia Spain Sweden Switzerland Turkey Ukraine UnitedKingdom VaticanCity', ' ')[[1]]
+
+# which european countries have different names in mapworld
+
+#countries_europe[!(countries_europe %in% map.world$region)]
+
+countries_europe[countries_europe == "BosniaandHerzegovina"] <- 'Bosnia and Herzegovina'
+countries_europe[countries_europe == "Czechia"] <- 'Czech Republic'
+countries_europe[countries_europe == "NorthMacedonia"] <- 'Macedonia'
+countries_europe[countries_europe == "UnitedKingdom"] <- 'UK'
+countries_europe[countries_europe == 'VaticanCity'] <- 'Vatican'
+countries_europe[countries_europe == 'SanMarino'] <- 'San Marino'
+
+# check
+countries_europe[!(countries_europe %in% map.world$region)]
+
+# filtering out russia, Turkey and kazakhstan
+countries_europe <- countries_europe[countries_europe != 'Russia']
+countries_europe <- countries_europe[countries_europe != 'Kazakhstan']
+countries_europe <- countries_europe[countries_europe != 'Turkey']
+
+# filtering coordinates for european countries
+europe_coord <- map.world %>% 
+  filter(region %in% countries_europe)
+
+# joining table holding adjusted r squared values
+europe_coord <- right_join(europe, europe_coord, by = c('Country' = 'region'))
+europe_coord$adjr2 <- as.numeric(as.character(europe_coord$adjr2))
+```
+
+```{r results='hide'}
+asia <- str_split(c('Australia, New Zealand, Papua New Guinea, Indonesia, Malaysia, Vietnam, Thailand, Myanmar, Philippines, China, South Korea, North Korea, Japan, Mongolia'), ', ') [[1]]
+# checking if the countries are written correctly
+asia[!(asia %in% map.world$region)]
+asia_coords <- map.world %>% 
+  filter(region %in% asia)
+asia_ar2 <- setdiff(countries, europe)
+asia_coords <- right_join(asia_ar2, asia_coords, by = c('Country' = 'region'))
+asia_coords$adjr2 <- as.numeric(as.character(asia_coords$adjr2))
+```
+
+```{r results='hide'}
+eurasia_countries <- c(countries_europe, asia)
+eurasia <- map.world %>% 
+  filter(region %in% eurasia_countries)
+eurasia <- right_join(countries, eurasia, by = c('Country' = 'region'))
+eurasia$adjr2 <- as.numeric(as.character(eurasia$adjr2))
+```
+
+```{r}
+bgcol = 'gray95'
+asia2 <- ggplot(eurasia, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = adjr2)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)), labels = as.character(c(0.2,0.3, 0.4, 0.5, 0.6,0.7)), breaks = c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)) +
+  labs(fill = 'Adj.r2',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray20'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(70, NA)) + 
+  ylim(c(-50, 55))
+
+
+europe2 <- ggplot(eurasia, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = adjr2)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)), labels = as.character(c(0.2,0.3, 0.4, 0.5, 0.6,0.7)), breaks = c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)) +
+  labs(fill = 'Adj.r2',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray20'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(-27, 50)) + 
+  ylim(c(30, 85))
+
+eurasia2 <- grid.arrange(europe2, asia2, ncol = 2, widths = c(7.29, 6))
+```
+
+```{r results='hide'}
+countries_raw <- countries_raw %>% 
+  mutate(Effect_strength = abs(stretch / intercept)*100)
+
+t <- sapply(as.vector(countries_raw$Country), function(x) ifelse(x == 'South_Korea', 'South Korea', x), USE.NAMES = F)
+sum(!(t %in% unique(map.world$region)))
+countries_raw$Country <- t
+rm(t)
+eff_str <- right_join(select(countries_raw, Country, Effect_strength), eurasia, by = c('Country' = 'Country'))
+```
+
+```{r}
+bgcol = 'gray95'
+asia_eff <- ggplot(eff_str, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = Effect_strength)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0, 2, 4, 6, 8, 10)), labels = as.character(c(0,2, 4, 6, 8, 10)), breaks = c(0,2, 4, 6, 8, 10)) +
+  labs(fill = 'Effect\nstrength',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray20'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(70, NA)) + 
+  ylim(c(-50, 55))
+
+europe_eff <- ggplot(eff_str, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = Effect_strength)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0, 2, 4, 6, 8, 10)), labels = as.character(c(0,2, 4, 6, 8, 10)), breaks = c(0,2, 4, 6, 8, 10)) +
+  labs(fill = 'Effect\nstrength',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray20'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(-27, 50)) + 
+  ylim(c(30, 85))
+
+
+eurasia_eff_str <- grid.arrange(europe_eff, asia_eff, ncol = 2, widths = c(7.29, 6))
+```
+
+```{r}
+birth_map <- grid.arrange(eurasia2, eurasia_eff_str, ncol = 1)
+ggsave('final_pics/birth_map.png', birth_map, width = 10, height = 8)
+```
+
+
+```{r}
+d_and_b <- read_rds('deaths_and_births_all.rds')
+
+months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December')
+d_and_b <- d_and_b %>% 
+  mutate(numMonth = match(Month, months))
+rm(months)
+d_and_b <- d_and_b %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>%
+  mutate(births_per_monthday = Births/month_days,
+         deaths_per_monthday = Deaths/month_days) %>% 
+  {.}
+```
+
+
+```{r results='hide'}
+deaths <- tibble()
+countries_names <- unique(d_and_b$country_name)
+
+for (i in 1:length(countries_names)) {
+  country <- countries_names[i]
+  sinmodel <- lm(deaths_per_monthday ~ sin(2*pi*numMonth/12) + cos(2*pi*numMonth/12), data = filter(d_and_b, country_name == country))
+  a <- anova(
+    lm(deaths_per_monthday ~ 1, data = filter(d_and_b, country_name == country)),
+    sinmodel
+  )
+  
+  xmax <- (6/pi) * atan(sinmodel$coefficients[[2]] / sinmodel$coefficients[[3]])
+  ymax <- sinmodel$coefficients[[1]] + sinmodel$coefficients[[2]] * sin(2*pi*xmax/12) + sinmodel$coefficients[[3]] * cos(2*pi*xmax/12)
+  
+  deaths <- rbind(deaths, tibble(Country = country, 
+                                                   adjr2 = summary(sinmodel)$adj.r.squared, 
+                                                   intercept = sinmodel$coefficients[[1]], 
+                                                   stretch = abs(ymax - sinmodel$coefficients[[1]]), 
+                                                   sin_vs_linear = a$`Pr(>F)`[2]))
+}
+```
+
+```{r echo = F}
+knitr::kable(
+  deaths
+)
+```
+
+```{r}
+dar2_plot <- deaths %>% 
+  mutate(logp = -log10(sin_vs_linear)) %>% 
+  arrange(desc(logp))
+
+dar2_plot$Country <- factor(dar2_plot$Country, levels = dar2_plot$Country)
+
+dar2_plot %>% 
+  ggplot(aes(Country, logp)) + 
+  geom_col(fill = 'navy') + 
+  geom_hline(yintercept = -log10(0.05/12), col = 'orange', linetype = 2, size = 2) + # orange 
+  theme_tomas() +
+  labs(y = expression(paste('-log'[10], ' pvalue')), x = NULL) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+ggsave('final_pics/d_sin_con_comp.png', height = 5, width = 14.6)  
+```
+
+
+```{r}
+dstr <- deaths %>% 
+  mutate(effstr = 100*stretch/intercept) %>% 
+  {.}
+dstr
+dstr %>% 
+  ggplot(aes(effstr, adjr2)) + 
+  geom_smooth(method = 'lm', fill = 'gray80') + 
+  geom_point() + 
+  theme_tomas() 
+cor(dstr$adjr2, dstr$effstr)
+```
+
+```{r results='hide'}
+deaths <- deaths %>% 
+  mutate(Effect_strength = abs(100*stretch / intercept)) %>% 
+  select(Country, adjr2, Effect_strength)
+
+deaths_coords <- right_join(select(deaths, Country, Effect_strength), select(eurasia, -adjr2), by = c('Country' = 'Country'))
+deaths_coords <- right_join(select(deaths, Country, adjr2), deaths_coords, by = c('Country' = 'Country'))
+```
+
+```{r}
+bgcol = 'gray20'
+asia_deaths_ar2 <- ggplot(deaths_coords, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = adjr2)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)), labels = as.character(c(0.2,0.3, 0.4, 0.5, 0.6,0.7)), breaks = c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)) +
+  labs(fill = 'Adj.r2',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray95'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(70, NA)) + 
+  ylim(c(-50, 55))
+
+
+europe_deaths_ar2 <- ggplot(deaths_coords, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = adjr2)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)), labels = as.character(c(0.2,0.3, 0.4, 0.5, 0.6,0.7)), breaks = c(0.2,0.3, 0.4, 0.5, 0.6, 0.7)) +
+  labs(fill = 'Adj.r2',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray95'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(-27, 50)) + 
+  ylim(c(30, 85))
+
+eurasia_death_ar2 <- grid.arrange(europe_deaths_ar2, asia_deaths_ar2, ncol = 2, widths = c(7.29, 6))
+```
+
+```{r}
+bgcol = 'gray20'
+asia_deaths_eff <- ggplot(deaths_coords, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = Effect_strength)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0, 2, 4, 6, 8, 10)), labels = as.character(c(0,2, 4, 6, 8, 10)), breaks = c(0,2, 4, 6, 8, 10)) +
+  labs(fill = 'Effect\nstrength',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray95'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(70, NA)) + 
+  ylim(c(-50, 55))
+
+
+europe_deaths_eff <- ggplot(deaths_coords, aes( x = long, y = lat, group = group )) +
+  geom_polygon(aes(fill = Effect_strength)) + 
+  scale_fill_gradientn(colours = viridis(6), values = scales::rescale(c(0, 2, 4, 6, 8, 10)), labels = as.character(c(0,2, 4, 6, 8, 10)), breaks = c(0,2, 4, 6, 8, 10)) +
+  labs(fill = 'Effect\nstrength',
+       x = NULL,
+       y = NULL) +
+  
+  theme(text = element_text(color = 'gray95'),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = bgcol, color = bgcol),
+        plot.background = element_rect(fill = bgcol, color = bgcol),
+        legend.position = c(.10,.36),
+        legend.background = element_blank(),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 13)
+        ) +
+  xlim(c(-27, 50)) + 
+  ylim(c(30, 85))
+
+
+eurasia_death_eff_str <- grid.arrange(europe_deaths_eff, asia_deaths_eff, ncol = 2, widths = c(7.29, 6))
+```
+
+```{r}
+death_map <- grid.arrange(eurasia_death_ar2, eurasia_death_eff_str, nrow = 2)
+ggsave('final_pics/death_map.png', death_map, width = 10, height = 8)
+```
+
+
+```{r}
+births_map <- grid.arrange(eurasia2, eurasia_eff_str, nrow = 1)
+deaths_map <- grid.arrange(eurasia_death_ar2, eurasia_death_eff_str, nrow = 1)
+```
+
+```{r}
+b_and_d_plot <- grid.arrange(births_map, deaths_map)
+#ggsave(b_and_d_plot, filename = 'final_pics/b_and_d_plot.png', width = 14.6, height = 9)
+```
+
+# Births and Deaths (Figure 7)
+
+```{r}
+(dbplot_ym <- d_and_b %>% 
+  filter(ifelse(country_name == 'Australia', Year < 2017, Year < 2018)) %>% 
+  arrange(country_name, Year, numMonth) %>% 
+  group_by(country_name) %>% 
+  mutate(n = 1:n()) %>% 
+  ungroup() %>% 
+  mutate(ycol = ifelse(Year %% 2 == 0, '0', '1')) %>%
+  mutate(ycol2 = ifelse(Year %% 2 == 0, '2', '3')) %>%
+  
+  ggplot() + 
+    geom_line(aes(n, births_per_monthday, group = 1, col = ycol)) +
+    geom_line(aes(n, deaths_per_monthday, group = 1, col = ycol2)) +
+    facet_wrap(~country_name, ncol = 2, scales = 'free_y') +
+    scale_x_continuous(label = 2007:2017, breaks = seq(from = 6.5, length.out = 11, by = 12)) + 
+    scale_y_continuous(breaks = pretty_breaks(n = 2)) +
+    scale_color_manual(values = c('0' = 'darkred', '1' = 'orange', '2' = 'dodgerblue2', '3' = 'navy')) + 
+  labs(x = NULL, y = 'Births and Deaths per month day') +
+  
+    theme_tomas() + 
+    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+)
+
+#ggsave(filename = 'final_pics/dbplot_ym.png', plot = dbplot_ym, width = 14.6, height = 9)
+```
+
+# Data Gathering
+
+```{r eval=FALSE}
+# Denmark
+total_month <- read_rds(path = '../total_month.rds')
+days_in_month <- c(31*11, 28*11 + 3, 31*11, 30*11, 31*11, 30*11, 31*11, 31*11, 30*11, 31*11, 30*11, 31*11)
+total_month$Month <- factor(total_month$Month, levels = c('January', 'february', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+denmark <- total_month %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'february' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'february', 28, 30)))) %>% 
+  mutate(births_per_day = value / month_days) %>% 
+  rename(Births = value)
+
+# Australia
+au_raw <- read_csv(file = '../other_countries/australia.csv')
+au <- au_raw %>% 
+  filter(Region == 'Australia') %>% 
+  dplyr::select(`Month of occurence`, Time, Value)
+# dropping values for `total`
+au <- au[au$`Month of occurence` != 'Total',]
+au$`Month of occurence` <- factor(au$`Month of occurence`, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+au <- au %>% 
+  rename(Month = `Month of occurence`, Year = Time, Births = Value) %>% 
+  filter(Year < 2017) %>%  # Year 2017 was weird, probably a measurement error
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+{.}
+
+# Norway
+norway_raw <- read_delim('../other_countries/norway.csv', skip = 2, col_names = T, delim = ';')
+norway <- norway_raw %>% 
+  gather(`Live births, absolute figures 1966`:`Live births, absolute figures 2017`, key = year0, value = Births) %>% 
+  separate(year0, into = c('l', 'b', 'a', 'f', 'Year')) %>% 
+  dplyr::select(Year, month, Births) %>% 
+  {.}
+norway$Year <- as.numeric(as.character(norway$Year))
+norway$month <- factor(norway$month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+norway <- norway %>% 
+  rename(Month = month) %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+
+# Sweden
+sweden <- read_csv('../other_countries/sweden_ba.csv')
+sweden <- sweden %>% 
+  gather(`Births 2007`:`Deaths 2017`, key = event, value = Amount) %>%
+  separate(event, into = c('Event', 'Year'), sep = ' ') %>% 
+  dplyr::select(-sex) %>% 
+  group_by(Year, month, Event) %>% 
+  summarise(Amount = sum(Amount)) %>% 
+  rename(Month = month) %>% 
+  ungroup() %>% 
+  {.}
+sweden$Month <- factor(sweden$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+sweden$Year <- as.numeric(as.character(sweden$Year))
+(sweden_b <- sweden %>% 
+  filter(Event == 'Births') %>% 
+  dplyr::select(-Event) %>% 
+  rename(Births = Amount) %>% 
+   mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>%
+  {.}
+)
+rm(sweden)
+sweden <- sweden_b
+rm(sweden_b)
+
+# Iceland
+iceland_raw <- read_delim('../other_countries/iceland.csv', delim = ';')
+iceland <- iceland_raw %>% 
+  gather('January':'December', key = Month, value = 'Births') %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+{.}
+iceland$Month <- factor(iceland$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Finland
+finland_raw <- read_csv('../other_countries/finland.csv', skip = 2)
+finland <- finland_raw %>% 
+  gather('January Live births':'December Live births', key = Month, value = Births) %>% 
+  separate(Month, into = c('Month', 'l', 'b')) %>% 
+  dplyr::select(Year, Month, Births) %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days)
+finland$Month <- factor(finland$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Estonia
+estonia_raw <- read_csv('../other_countries/estonia.csv')
+estonia <- estonia_raw %>% 
+  rename(Month = `Month of birth`, Year = TIME, Births = Value) %>%
+  filter(Month != 'Months total') %>% 
+  dplyr::select(Year, Month, Births) %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+{.}
+estonia$Month <- factor(estonia$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Latvia
+latvia_raw <- read_csv('../other_countries/latvia.csv')
+latvia_raw$`Live births Total` <- as.numeric(as.character(latvia_raw$`Live births Total`))
+latvia <- latvia_raw %>% 
+  filter(`Live births Total` != '-') %>% 
+  separate(`Year/ Month`, into = c('Year', 'Month'), sep = 'M') %>% 
+  rename(Births = `Live births Total`) %>% 
+  mutate(Month = month.name[as.numeric(Month)]) %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+latvia$Month <- factor(latvia$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+latvia$Year <- as.numeric(as.character(latvia$Year))
+
+# Lithuania
+lithuania_raw <- read_csv('../other_countries/lithuania.csv')
+lithuania <- lithuania_raw %>% 
+   separate(Time, into = c('Year', 'Month'), sep = 'M') %>% 
+   dplyr::select(Year, Month, Value) %>% 
+   rename(Births = Value) %>% 
+   mutate(Month = month.name[as.numeric(Month)]) %>% 
+   mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+{.}
+lithuania$Month <- factor(lithuania$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+lithuania$Year <- as.numeric(as.character(lithuania$Year))
+
+# Ireland
+ireland_raw <- read_csv('../other_countries/Ireland.csv', skip = 3)
+irl_months <- rep(c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'), each = 31) 
+ireland <- ireland_raw[3:ncol(ireland_raw)] %>% 
+  drop_na() %>% 
+  mutate(Month = irl_months) %>% 
+  dplyr::select(Month, everything()) %>%
+  rename(Day = X3) %>% 
+  gather('1980':'2016', key = Year, value = Births) %>% 
+  filter(Births != '..') %>% 
+  {.}
+ireland$Births <- as.numeric(as.character(ireland$Births))
+ireland$Year <- as.numeric(as.character(ireland$Year))
+ireland$Month <- factor(ireland$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+ireland <- ireland %>% 
+  mutate(dummy_counter = rep(1, nrow(ireland))) %>% 
+  group_by(Year, Month) %>% 
+  summarise(Births = sum(Births), month_days = sum(dummy_counter)) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+
+# Japan
+japan_raw <- read_csv('../other_countries/japan.csv')
+japan_year <- gsub(pattern = '.', replacement = ' ', japan_raw$Time, fixed = T)
+japan_raw$Time <- japan_year
+japan <- japan_raw %>% 
+  separate(Time, into = c('Month0', 'Year'), sep = ' ')
+japan <- japan[1:480,]
+japan <- japan %>%
+  rename(Births = `Live births【person】`) %>% 
+  dplyr::select(Year, Month0, Births) %>% 
+  mutate(Month = rep(c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'), 40)) %>% 
+  dplyr::select(Year, Month, Births) %>% 
+  {.}
+japan$Year <- as.numeric(as.character(japan$Year))
+japan$Month <- factor(japan$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+japan <- japan %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days)
+
+# Slovenia
+slovenia <- read_delim('../other_countries/slovenia_births.csv', delim = ';', col_names = F)
+names(slovenia) <- c('Year', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December')
+slovenia <- slovenia %>% 
+  gather(January:December, key = Month, value = Births) %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+slovenia$Month <- factor(slovenia$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Croatia
+croatia <- read_csv('../other_countries/croatia_births.csv', skip = 2)
+croatia <- croatia %>% 
+  dplyr::select(-Sex) %>% 
+  rename(Month = `Month of birth`) %>% 
+  gather(`2007`:`2017`, key = Year, value = Births) %>% 
+  dplyr::select(Year, everything()) %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+croatia$Year <- as.numeric(as.character(croatia$Year))
+croatia$Month <- factor(croatia$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# South Korea
+korea <- read_csv('../other_countries/south_korea_combo.csv')
+bd <- as.character(as.vector(korea[1,2:ncol(korea)]))
+bdval <- as.numeric(as.vector(korea[2,2:ncol(korea)]))
+korea_b <- bdval[bd == 'Live births(persons)']
+months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December')
+months <- rep(months, 11)
+months <- factor(months, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+years <- rep(2007:2017, each = 12)
+korea_births <- tibble(Year = years, Month = months, Births = korea_b)
+korea_births
+rm(bd, bdval, korea_b, korea, months, years)
+korea <- korea_births %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+# France
+france <- read_delim('../other_countries/france_births.csv', skip = 2, delim = ';')
+france <- france %>% 
+  separate(Period, into = c('Year', 'Month'), sep = '-') %>% 
+  dplyr::select(-X3) %>% 
+  rename(Births = X2) %>% 
+  mutate(Month = month.name[as.numeric(Month)]) %>% 
+  filter(as.numeric(Year) <= 2017 & as.numeric(Year) >= 2007) %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+france$Year <- as.numeric(as.character(france$Year))
+france$Month <- factor(france$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Germany
+germany<- read_delim('../other_countries/germany_births.csv', skip = 5, delim = ';')
+germany<- germany %>%  
+  dplyr::select(-Male, -Female) %>% 
+  rename(Year = X1, Month = X2, Births = Total) %>% 
+  drop_na() %>% 
+  mutate(month_days = ifelse(Month %in% c('January', 'March', 'May', 'July', 'August', 'October', 'December'), 31, ifelse(Month == 'February' & as.numeric(Year) %% 4 == 0, 29, ifelse(Month == 'February', 28, 30)))) %>% 
+  mutate(births_per_day = Births / month_days) %>% 
+  {.}
+germany$Year <- as.numeric(as.character(germany$Year))
+germany$Month <- factor(germany$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+```
+
+```{r eval=FALSE}
+countries_raw <- plyr::rbind.fill(year_filter(au, 'Australia'), 
+                 year_filter(croatia, 'Croatia'),
+                 year_filter(denmark, 'Denmark'),
+                 year_filter(estonia, 'Estonia'), 
+                 year_filter(finland, 'Finland'),
+                 year_filter(france, 'France'),
+                 year_filter(germany, 'Germany'), 
+                 year_filter(iceland, 'Iceland'), 
+                 year_filter(ireland, 'Ireland'), 
+                 year_filter(japan, 'Japan'), 
+                 year_filter(korea, 'South_Korea'), 
+                 year_filter(latvia, 'Latvia'), 
+                 year_filter(lithuania, 'Lithuania'), 
+                 year_filter(norway, 'Norway'), 
+                 year_filter(slovenia, 'Slovenia'), 
+                 year_filter(sweden, 'Sweden')
+                 )
+write_rds(countries_raw, 'countries_raw.rds')
+```
+
+```{r eval = F}
+# Denmark
+denmark_death <- read_delim('../deaths/denmark_deaths.csv', skip = 2, delim = ';')
+
+denmark_death <- denmark_death %>% 
+  drop_na() %>% 
+  gather(`2007` :`2017`, key = Year, value = Deaths) %>% 
+  rename(Month = ` _1`) %>% 
+  select(Year, Month, Deaths) %>% 
+  {.}
+denmark_death <- tidy(apply(denmark_death, 1:2, function(x) ifelse(x == 'february', 'February', x)))
+denmark_death$Month <- factor(denmark_death$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Sweden
+(sweden <- read_rds('../other_countries/sweden.rds'))
+sweden_deaths <- sweden %>% 
+  filter(Event == 'Deaths') %>% 
+  rename(Deaths = Amount) %>% 
+  select(-Event) %>% 
+  arrange(Year, Month)
+
+# Finland
+finland_deaths <- read_csv('../deaths/finland_deaths.csv', skip = 2)
+colnames(finland_deaths) <- c('Year', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December')
+finland_deaths <- finland_deaths %>% 
+  gather('January':'December', key = Month, value = Deaths)
+finland_deaths$Month <- factor(finland_deaths$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Latvia
+latvia_deaths <- read_csv('../deaths/latvia_deaths.csv', skip = 2)
+latvia_deaths <- latvia_deaths %>% 
+  separate(`Year/ Month`, into = c('Year', 'Month'), sep = 'M') %>%
+  mutate(Month = month.name[as.numeric(Month)]) %>% 
+  rename(Deaths = `Deaths Total`) %>% 
+  {.}
+latvia_deaths$Month <- factor(latvia_deaths$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Lithuania
+lithuania_deaths <- read_csv('../deaths/lithuania_deaths.csv')
+lithuania_deaths <- lithuania_deaths %>% 
+  select(Time, Value) %>% 
+  rename(Deaths = Value) %>% 
+  separate(Time, into = c('Year', 'Month'), sep = 'M') %>%
+  mutate(Month = month.name[as.numeric(Month)]) %>% 
+  filter(as.numeric(Year) > 2006 & as.numeric(Year) < 2018) %>%
+  {.}
+lithuania_deaths$Month <- factor(lithuania_deaths$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Estonia
+estonia_deaths <- read_delim('../deaths/estonia_deaths.csv', skip = 2, delim = ';')
+estonia_deaths <- estonia_deaths %>% 
+  rename(Year = ' ') %>%
+  gather(January:December, key = Month, value = Deaths) %>% 
+  {.}
+estonia_deaths$Month <- factor(estonia_deaths$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Australia
+au_deaths <- read_csv('../deaths/australia_deaths.csv')
+au_deaths <- au_deaths %>% 
+  filter(Time > 2006 & Time < 2018) %>% 
+  filter(Sex == 'Persons', Measure == 'All Deaths', Region == 'Australia', MONTHS != 'TOT') %>% 
+  mutate(Month = month.name[as.numeric(MONTHS)]) %>% 
+  select(Time, Month, Value) %>% 
+  rename(Year = Time, Deaths = Value) %>% 
+  {.}
+
+# Slovenia
+slovenia_deaths <- read_delim('../deaths/slovenia_deaths.csv', col_names = F, delim = ';')
+names(slovenia_deaths) <- c('Year', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December')
+slovenia_deaths <- slovenia_deaths %>% 
+  gather(January:December, key = Month, value = Deaths)
+slovenia_deaths$Month <- factor(slovenia_deaths$Month, levels = c('Year', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Croatia
+croatia_deaths <- read_csv('../deaths/croatia_deaths.csv', skip = 2)
+croatia_deaths <- croatia_deaths %>% 
+  select(-Sex) %>% 
+  rename(Month = `Month of death`) %>% 
+  gather(`2007`:`2017`, key = Year, value = Deaths) %>% 
+  select(Year, everything())
+croatia_deaths$Year <- as.numeric(as.character(croatia_deaths$Year))
+croatia_deaths$Month <- factor(croatia_deaths$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# South Korea
+korea <- read_csv('../other_countries/south_korea_combo.csv')
+
+bd <- as.character(as.vector(korea[1,2:ncol(korea)]))
+bdval <- as.numeric(as.vector(korea[2,2:ncol(korea)]))
+korea_d <- bdval[bd != 'Live births(persons)']
+months <- c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December')
+months <- rep(months, 11)
+months <- factor(months, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+years <- rep(2007:2017, each = 12)
+korea_deaths <- tibble(Year = years, Month = months, Deaths = korea_d)
+
+# France
+france_deaths <- read_delim('../deaths/france_deaths.csv', skip = 2, delim = ';')
+france_deaths <- france_deaths %>% 
+  separate(Period, into = c('Year', 'Month'), sep = '-') %>% 
+  select(-X3) %>% 
+  rename(Deaths = X2) %>% 
+  mutate(Month = month.name[as.numeric(Month)]) %>% 
+  filter(as.numeric(Year) <= 2017 & as.numeric(Year) >= 2007)
+france_deaths$Year <- as.numeric(as.character(france_deaths$Year))
+france_deaths$Month <- factor(france_deaths$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+
+# Germany
+germany_deaths <- read_delim('../deaths/germany_deaths.csv', skip = 5, delim = ';')
+germany_deaths <- germany_deaths %>% 
+  mutate(Deaths = Male + Female) %>% 
+  select(-Male, -Female) %>% 
+  rename(Year = X1, Month = X2) %>% 
+  drop_na()
+germany_deaths$Year <- as.numeric(as.character(germany_deaths$Year))
+germany_deaths$Month <- factor(germany_deaths$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+```
+
+```{r eval = F}
+consistency <- function(df_b, df_d) {
+  df <- cbind(df_b, Deaths = df_d$Deaths)
+  df$Year <- as.numeric(as.character(df$Year))
+  df$Month <- factor(df$Month, levels = c('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November', 'December'))
+  
+  df <- select(df, Year, Month, everything())
+  
+  df[3] <- as.numeric(as.character(df[[3]]))
+  df[4] <- as.numeric(as.character(df[[4]]))
+  df
+}
+```
+
+```{r eval = F}
+deaths_and_births_all <- rbind(
+  consistency(denmark, denmark_death),
+  consistency(sweden, sweden_deaths),
+  consistency(finland, finland_deaths),
+  consistency(estonia, estonia_deaths),
+  consistency(latvia, latvia_deaths),
+  consistency(lithuani, lithuania_deaths),
+  consistency(au, au_deaths), 
+  consistency(slovenia, slovenia_deaths), 
+  consistency(croatia, croatia_deaths), 
+  consistency(korea, korea_deaths),
+  consistency(france, france_deaths),
+  consistency(germany, germany_deaths)
+  )
+
+deaths_and_births_all <-  deaths_and_births_all %>% 
+  mutate(country_name = rep(c('Denmark', 'Sweden', 'Finland', 'Estonia', 'Latvia', 'Lithuania', 'Australia', 'Slovenia', 'Croatia', 'South Korea', 'France', 'Germany'), each = 132))
+deaths_and_births_all
+```
+
+
+
+
