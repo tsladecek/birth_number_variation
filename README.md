@@ -1,2 +1,2 @@
-# birth_number_variation
+# Birth and Death Number Variation
 Study of Birth and Death numbers in several countries
